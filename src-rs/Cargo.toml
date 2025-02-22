@@ -1,0 +1,10 @@
+[package]
+edition = "2021"
+name = "rime"
+version = "0.1.0"
+
+[dependencies]
+libc = "0.2.170"
+
+[build-dependencies]
+cbindgen = "0.28.0"
