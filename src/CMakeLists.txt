@@ -171,3 +171,18 @@ else()
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
   install(TARGETS rime-static DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
 endif()
+
+
+include(FetchContent)
+
+FetchContent_Declare(
+    Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG v0.5 # Optionally specify a commit hash, version tag or branch here
+)
+# Set any global configuration variables such as `Rust_TOOLCHAIN` before this line!
+FetchContent_MakeAvailable(Corrosion)
+
+corrosion_import_crate(MANIFEST_PATH "${CMAKE_SOURCE_DIR}/src-rs/Cargo.toml")
+
+target_link_libraries(rime rime_rs_binding)

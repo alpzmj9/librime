@@ -45,6 +45,8 @@ class CharsetFilter : public Filter, TagMatching {
   static bool FilterDictEntry(an<DictEntry> entry);
 };
 
+extern "C" bool is_extended_cjk(uint32_t ch);
+
 }  // namespace rime
 
 #endif  // RIME_CHARSET_FILTER_H_

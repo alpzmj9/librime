@@ -18,10 +18,9 @@ jobs:
         runs-on: [macos-13, macos-14]
         include:
           - runs-on: macos-13
-            create-distributable: false
+            create-distributable: true
           - runs-on: macos-14
             create-distributable: true
-            build_variant: universal
     env:
       boost_version: 1.84.0
       BOOST_ROOT: ${{ github.workspace }}/deps/boost-1.84.0
