@@ -1,13 +1,14 @@
 [package]
 edition = "2021"
-name = "rime-rs-binding"
+name = "rime-rs"
 version = "0.1.0"
 
 [dependencies]
-rime-rs = {git = "https://github.com/alpzmj9/librime-rs.git"}
+libc = "0.2"
+rime = {git = "https://github.com/alpzmj9/librime-rs.git"}
 
 [build-dependencies]
 cbindgen = "0.28.0"
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["cdylib"]

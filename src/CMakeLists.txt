@@ -185,4 +185,4 @@ FetchContent_MakeAvailable(Corrosion)
 
 corrosion_import_crate(MANIFEST_PATH "${CMAKE_SOURCE_DIR}/src-rs/Cargo.toml")
 
-target_link_libraries(rime rime_rs_binding)
+target_link_libraries(rime rime_rs)

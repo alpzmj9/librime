@@ -104,7 +104,7 @@ set common_cmake_flags=%common_cmake_flags%^
   -DCMAKE_BUILD_TYPE:STRING="%build_config%"^
   -DCMAKE_USER_MAKE_RULES_OVERRIDE:PATH="%RIME_ROOT%\cmake\c_flag_overrides.cmake"^
   -DCMAKE_USER_MAKE_RULES_OVERRIDE_CXX:PATH="%RIME_ROOT%\cmake\cxx_flag_overrides.cmake"^
-  @REM -DCMAKE_EXE_LINKER_FLAGS_INIT:STRING="-llibcmt"^
+  -DCMAKE_EXE_LINKER_FLAGS_INIT:STRING="-llibcmt"^
   -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"
 
 set deps_cmake_flags=%common_cmake_flags%^
@@ -197,6 +197,19 @@ echo on
 cmake --build %build_dir% --config %build_config% --target install
 @echo off
 if errorlevel 1 goto error
+
+REM +++ 新增：创建目录并复制 DLL +++
+set target_dir=%RIME_ROOT%\dist\lib
+if not exist "%target_dir%" (
+  mkdir "%target_dir%"
+)
+copy /Y "%build_dir%\src\rime_rs.dll" "%target_dir%\" >nul
+if errorlevel 1 (
+  echo Error: Failed to copy rime_rs.dll
+  goto error
+)
+echo Copied rime_rs.dll to %target_dir%
+REM --- 新增结束 ---
 
 if "%build_test%" == "ON" (
   copy /y %rime_install_prefix%\lib\rime.dll %build_dir%\test
