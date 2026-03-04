@@ -19,6 +19,6 @@
 [submodule "librime-rs"]
 	path = librime-rs
 	url = https://github.com/alpzmj9/librime-rs.git
-[submodule "librime-rs-capi"]
-	path = librime-rs-capi
-	url = https://github.com/alpzmj9/librime-rs-capi.git
+[submodule "librime-capi"]
+	path = librime-capi
+	url = https://github.com/alpzmj9/librime-capi.git
