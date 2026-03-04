@@ -12,3 +12,4 @@ log = "0.4"
 
 [build-dependencies]
 cxx-build = "1.0"
+static_vcruntime = "2.0.0"

@@ -12,7 +12,8 @@ endif()
 set(rime_core_module_src
   ${rime_api_src}
   ${rime_base_src}
-  ${rime_config_src})
+  ${rime_config_src}
+  ${librime_rs_cc})
 
 # add rc info for windows MSVC build
 if(WIN32)
@@ -63,6 +64,32 @@ if(Glog_FOUND AND WIN32)
   set(rime_core_deps ${rime_core_deps} dbghelp)
 endif()
 
+# Add Rust FFI library
+include(${CMAKE_SOURCE_DIR}/cmake/rust.cmake)
+
+# 根据 native-static-libs 输出添加所有需要的系统库
+if(WIN32)
+  # 从 --print=native-static-libs 输出的依赖清单
+  set(rime_core_deps ${rime_core_deps} 
+      librime_rs
+      kernel32
+      ntdll
+      userenv
+      ws2_32
+      dbghelp
+      advapi32
+  )
+  
+  # 为 Rust 库设置接口属性
+  if(TARGET librime_rs)
+    set_target_properties(librime_rs PROPERTIES
+      INTERFACE_LINK_LIBRARIES "kernel32.lib;ntdll.lib;userenv.lib;ws2_32.lib;dbghelp.lib;advapi32.lib"
+    )
+  endif()
+else()
+  set(rime_core_deps ${rime_core_deps} librime_rs)
+endif()
+
 if(MINGW)
   # fix: bcrypt for boost uuid issue
   # https://github.com/boostorg/uuid/issues/68
@@ -83,6 +110,20 @@ endif()
 if(BUILD_SHARED_LIBS)
   add_library(rime ${rime_src})
   target_link_libraries(rime ${rime_deps})
+  
+  # 添加 Windows 特定的链接器选项 - 使用静态运行时匹配 Rust 的 static_vcruntime
+  if(MSVC)
+    # 使用静态运行时 (/MT) 以匹配 Rust 的静态运行时
+    set_target_properties(rime PROPERTIES
+      MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+    )
+    
+    # 添加链接器标志以解决符号冲突
+    target_link_options(rime PRIVATE
+      /IGNORE:4098  # 忽略默认库冲突警告
+    )
+  endif()
+  
   set_target_properties(rime PROPERTIES
     DEFINE_SYMBOL "RIME_EXPORTS"
     VERSION ${rime_version}

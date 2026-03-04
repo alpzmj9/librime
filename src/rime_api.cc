@@ -13,10 +13,14 @@
 #include <rime/module.h>
 #include <rime/setup.h>
 
+#include "lib.rs.h"
+
 using namespace rime;
 
 RIME_DEPRECATED void RimeSetupLogging(const char* app_name) {
   SetupLogging(app_name);
+  rime::rust::librime_rs_init();
+  rime::rust::librime_rs_test_log("Rust integrated successfully via cxx!");
 }
 
 #if RIME_BUILD_SHARED_LIBS
