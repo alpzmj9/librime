@@ -33,6 +33,7 @@ set build_shared=ON
 set build_test=OFF
 set clean=0
 set enable_logging=ON
+set build_rust=1
 
 :parse_cmdline_options
 if "%1" == "" goto end_parsing_cmdline_options
@@ -65,6 +66,9 @@ if "%1" == "logging" (
 if "%1" == "nologging" (
   set enable_logging=OFF
 )
+if "%1" == "norust" (
+  set build_rust=0
+)
 shift
 goto parse_cmdline_options
 :end_parsing_cmdline_options
@@ -80,13 +84,19 @@ if not defined deps_install_prefix set deps_install_prefix=%RIME_ROOT%
 if not defined rime_install_prefix set rime_install_prefix=%RIME_ROOT%\dist
 
 if %clean% == 1 (
- rmdir /s /q %build_dir%
+  rmdir /s /q %build_dir%
   rmdir /s /q deps\glog\%build_dir%
   rmdir /s /q deps\googletest\%build_dir%
   rmdir /s /q deps\leveldb\%build_dir%
   rmdir /s /q deps\marisa-trie\%build_dir%
   rmdir /s /q deps\opencc\%build_dir%
   rmdir /s /q deps\yaml-cpp\%build_dir%
+  
+  rem 清理 Rust 编译目录
+  if exist librime-rs\target (
+    echo Cleaning Rust build directory...
+    rmdir /s /q librime-rs\target
+  )
 )
 
 if defined CMAKE_GENERATOR (
@@ -99,13 +109,22 @@ if defined PLATFORM_TOOLSET (
   set common_cmake_flags=%common_cmake_flags% -T%PLATFORM_TOOLSET%
 )
 
+rem 根据 ARCH 设置 Rust target
+if "%ARCH%" == "x64" (
+  set RUST_TARGET=x86_64-pc-windows-msvc
+) else (
+  set RUST_TARGET=i686-pc-windows-msvc
+)
+
 set common_cmake_flags=%common_cmake_flags%^
   -DCMAKE_CONFIGURATION_TYPES:STRING="%build_config%"^
   -DCMAKE_BUILD_TYPE:STRING="%build_config%"^
   -DCMAKE_USER_MAKE_RULES_OVERRIDE:PATH="%RIME_ROOT%\cmake\c_flag_overrides.cmake"^
   -DCMAKE_USER_MAKE_RULES_OVERRIDE_CXX:PATH="%RIME_ROOT%\cmake\cxx_flag_overrides.cmake"^
-  -DCMAKE_EXE_LINKER_FLAGS_INIT:STRING="-llibcmt"^
   -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"
+
+rem 移除 -llibcmt 链接器标志，因为它可能引起警告
+rem set common_cmake_flags=%common_cmake_flags% -DCMAKE_EXE_LINKER_FLAGS_INIT:STRING="-llibcmt"
 
 set deps_cmake_flags=%common_cmake_flags%^
   -DBUILD_SHARED_LIBS:BOOL=OFF^
@@ -177,6 +196,42 @@ if %build_deps% == 1 (
 
 if %build_librime% == 0 goto exit
 
+rem 先编译 Rust 库，确保头文件和库文件存在
+if %build_rust% == 1 (
+  echo.
+  echo building librime-rs Rust library...
+  echo.
+  
+  if not exist librime-rs (
+    echo Error: librime-rs directory not found!
+    goto error
+  )
+  
+  pushd librime-rs
+  
+  rem 设置 Rust 环境变量
+  set RUSTFLAGS=-C target-feature=+crt-static
+  
+  rem 根据配置编译 Rust
+  if "%build_config%" == "Release" (
+    echo Compiling Rust in release mode for %RUST_TARGET%...
+    cargo build --release --target %RUST_TARGET%
+  ) else (
+    echo Compiling Rust in debug mode for %RUST_TARGET%...
+    cargo build --target %RUST_TARGET%
+  )
+  
+  if errorlevel 1 (
+    echo Error: Failed to build librime-rs
+    popd
+    goto error
+  )
+  
+  popd
+  echo Rust library built successfully.
+  echo.
+)
+
 set rime_cmake_flags=%common_cmake_flags%^
  -DBUILD_STATIC=ON^
  -DBUILD_SHARED_LIBS=%build_shared%^
@@ -199,20 +254,33 @@ cmake --build %build_dir% --config %build_config% --target install
 if errorlevel 1 goto error
 
 if "%build_test%" == "ON" (
-  copy /y %rime_install_prefix%\lib\rime.dll %build_dir%\test
-  ctest --test-dir %build_dir%\test -C %build_config%  --output-on-failure
+  echo Running tests...
+  copy /y %rime_install_prefix%\bin\rime.dll %build_dir%\test
+  ctest --test-dir %build_dir%\test -C %build_config% --output-on-failure
   if errorlevel 1 goto error
 )
 
 echo.
-echo ready.
+echo ========================================
+echo Build completed successfully!
+echo ========================================
 echo.
+echo Output files:
+echo   Libraries: %rime_install_prefix%\lib
+echo   Headers:   %rime_install_prefix%\include
+echo   Binaries:  %rime_install_prefix%\bin
+echo.
+
 goto exit
 
 :error
 set exitcode=%errorlevel%
 echo.
-echo error building la rime.
+echo ========================================
+echo ERROR building la rime!
+echo ========================================
+echo.
+echo Error code: %exitcode%
 echo.
 
 :exit
