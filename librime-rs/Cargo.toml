@@ -1,0 +1,14 @@
+[package]
+name = "librime-rs"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+cxx = "1.0"
+log = "0.4"
+
+[build-dependencies]
+cxx-build = "1.0"
