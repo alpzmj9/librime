@@ -51,14 +51,16 @@ add_custom_command(
 
 add_custom_target(librime_rs_target ALL DEPENDS ${librime_rs_lib} ${librime_rs_h} ${librime_rs_cc})
 
-# 创建导入的静态库
+# 创建导入的静态库 - 先不设置包含目录
 add_library(librime_rs STATIC IMPORTED)
 set_target_properties(librime_rs PROPERTIES 
   IMPORTED_LOCATION ${librime_rs_lib}
 )
 
-# 设置接口包含目录
-target_include_directories(librime_rs INTERFACE ${rust_target_dir}/cxxbridge/librime-rs/src)
+# 关键修改：使用生成器表达式延迟路径检查
+set_target_properties(librime_rs PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "$<BUILD_INTERFACE:${rust_target_dir}/cxxbridge/librime-rs/src>"
+)
 
 # 设置依赖
 add_dependencies(librime_rs librime_rs_target)
